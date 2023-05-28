@@ -4,7 +4,7 @@ class Index {
     async checkNewUser(id) {
         const candidate = await User.findOne({ id });
         if (!candidate) {
-            const firstName = ctx.message.from.first_name;
+            const firstName = 'ctx.message.from.first_name';
 
             const user = new User({
                 id,
@@ -16,6 +16,8 @@ class Index {
 
             await user.save();
         }
+
+        console.log('created')
     }
 
     async updateGameType(id, gameType){

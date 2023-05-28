@@ -1,128 +1,13 @@
 const { createCanvas } = require('canvas');
 
 class CanvasService {
-    createDefaultCanvas(moves){
+    createDefaultCanvas(moves, active, activeInner){
 
         let arrayFigures = []
 
         if(moves) {
             arrayFigures = moves
         }
-        // const arrayFigures = [
-        //     { row: 0, col: 0, innerRow: 0, innerCol: 0, figure: '0' },
-        //     { row: 0, col: 0, innerRow: 0, innerCol: 1, figure: '0' },
-        //     { row: 0, col: 0, innerRow: 0, innerCol: 2, figure: '0' },
-        //     { row: 0, col: 0, innerRow: 1, innerCol: 0, figure: '0' },
-        //     { row: 0, col: 0, innerRow: 1, innerCol: 1, figure: '0' },
-        //     { row: 0, col: 0, innerRow: 1, innerCol: 2, figure: '0' },
-        //     { row: 0, col: 0, innerRow: 2, innerCol: 0, figure: '0' },
-        //     { row: 0, col: 0, innerRow: 2, innerCol: 1, figure: '0' },
-        //     { row: 0, col: 0, innerRow: 2, innerCol: 2, figure: '0' },
-        //
-        //     { row: 0, col: 1, innerRow: 0, innerCol: 0, figure: '0' },
-        //     { row: 0, col: 1, innerRow: 0, innerCol: 1, figure: '0' },
-        //     { row: 0, col: 1, innerRow: 0, innerCol: 2, figure: '0' },
-        //     { row: 0, col: 1, innerRow: 1, innerCol: 0, figure: '0' },
-        //     { row: 0, col: 1, innerRow: 1, innerCol: 2, figure: '0' },
-        //     { row: 0, col: 1, innerRow: 2, innerCol: 0, figure: '0' },
-        //     { row: 0, col: 1, innerRow: 1, innerCol: 1, figure: '0' },
-        //     { row: 0, col: 1, innerRow: 2, innerCol: 1, figure: '0' },
-        //     { row: 0, col: 1, innerRow: 2, innerCol: 2, figure: '0' },
-        //
-        //     { row: 0, col: 2, innerRow: 0, innerCol: 0, figure: 'X' },
-        //     { row: 0, col: 2, innerRow: 0, innerCol: 1, figure: '0' },
-        //     { row: 0, col: 2, innerRow: 0, innerCol: 2, figure: 'X' },
-        //     { row: 0, col: 2, innerRow: 1, innerCol: 0, figure: '0' },
-        //     { row: 0, col: 2, innerRow: 1, innerCol: 1, figure: 'X' },
-        //     { row: 0, col: 2, innerRow: 1, innerCol: 2, figure: '0' },
-        //     { row: 0, col: 2, innerRow: 2, innerCol: 0, figure: 'X' },
-        //     { row: 0, col: 2, innerRow: 2, innerCol: 1, figure: '0' },
-        //     { row: 0, col: 2, innerRow: 2, innerCol: 2, figure: '0' },
-        //
-        //     { row: 1, col: 0, innerRow: 0, innerCol: 0, figure: '0' },
-        //     { row: 1, col: 0, innerRow: 1, innerCol: 1, figure: 'X' },
-        //     { row: 1, col: 0, innerRow: 0, innerCol: 1, figure: '0' },
-        //     { row: 1, col: 0, innerRow: 0, innerCol: 2, figure: '0' },
-        //     { row: 1, col: 0, innerRow: 1, innerCol: 2, figure: '0' },
-        //     { row: 1, col: 0, innerRow: 2, innerCol: 0, figure: '0' },
-        //     { row: 1, col: 0, innerRow: 1, innerCol: 0, figure: '0' },
-        //     { row: 1, col: 0, innerRow: 2, innerCol: 1, figure: '0' },
-        //     { row: 1, col: 0, innerRow: 2, innerCol: 2, figure: '0' },
-        //
-        //     { row: 1, col: 1, innerRow: 0, innerCol: 0, figure: '0' },
-        //     { row: 1, col: 1, innerRow: 0, innerCol: 1, figure: '0' },
-        //     { row: 1, col: 1, innerRow: 0, innerCol: 2, figure: '0' },
-        //     { row: 1, col: 1, innerRow: 1, innerCol: 0, figure: '0' },
-        //     { row: 1, col: 1, innerRow: 1, innerCol: 1, figure: '0' },
-        //     { row: 1, col: 1, innerRow: 1, innerCol: 2, figure: '0' },
-        //     { row: 1, col: 1, innerRow: 2, innerCol: 0, figure: '0' },
-        //     { row: 1, col: 1, innerRow: 2, innerCol: 1, figure: '0' },
-        //     { row: 1, col: 1, innerRow: 2, innerCol: 2, figure: '0' },
-        //
-        //     { row: 1, col: 2, innerRow: 0, innerCol: 0, figure: '0' },
-        //     { row: 1, col: 2, innerRow: 0, innerCol: 1, figure: '0' },
-        //     { row: 1, col: 2, innerRow: 1, innerCol: 1, figure: '0' },
-        //     { row: 1, col: 2, innerRow: 0, innerCol: 2, figure: '0' },
-        //     { row: 1, col: 2, innerRow: 1, innerCol: 2, figure: '0' },
-        //     { row: 1, col: 2, innerRow: 2, innerCol: 0, figure: '0' },
-        //     { row: 1, col: 2, innerRow: 1, innerCol: 0, figure: '0' },
-        //     { row: 1, col: 2, innerRow: 2, innerCol: 1, figure: '0' },
-        //     { row: 1, col: 2, innerRow: 2, innerCol: 2, figure: '0' },
-        //
-        //     { row: 2, col: 0, innerRow: 0, innerCol: 0, figure: '0' },
-        //     { row: 2, col: 0, innerRow: 0, innerCol: 1, figure: '0' },
-        //     { row: 2, col: 0, innerRow: 0, innerCol: 2, figure: '0' },
-        //     { row: 2, col: 0, innerRow: 1, innerCol: 0, figure: '0' },
-        //     { row: 2, col: 0, innerRow: 1, innerCol: 1, figure: 'X' },
-        //     { row: 2, col: 0, innerRow: 1, innerCol: 2, figure: '0' },
-        //     { row: 2, col: 0, innerRow: 2, innerCol: 0, figure: 'X' },
-        //     { row: 2, col: 0, innerRow: 2, innerCol: 1, figure: '0' },
-        //     { row: 2, col: 0, innerRow: 2, innerCol: 2, figure: 'X' },
-        //
-        //     { row: 2, col: 1, innerRow: 0, innerCol: 0, figure: '0' },
-        //     { row: 2, col: 1, innerRow: 0, innerCol: 1, figure: '0' },
-        //     { row: 2, col: 1, innerRow: 0, innerCol: 2, figure: '0' },
-        //     { row: 2, col: 1, innerRow: 1, innerCol: 0, figure: '0' },
-        //     { row: 2, col: 1, innerRow: 1, innerCol: 1, figure: '0' },
-        //     { row: 2, col: 1, innerRow: 1, innerCol: 2, figure: '0' },
-        //     { row: 2, col: 1, innerRow: 2, innerCol: 0, figure: '0' },
-        //     { row: 2, col: 1, innerRow: 2, innerCol: 1, figure: '0' },
-        //     { row: 2, col: 1, innerRow: 2, innerCol: 2, figure: '0' },
-        //
-        //     { row: 2, col: 2, innerRow: 0, innerCol: 0, figure: '0' },
-        //     { row: 2, col: 2, innerRow: 0, innerCol: 1, figure: '0' },
-        //     { row: 2, col: 2, innerRow: 0, innerCol: 2, figure: '0' },
-        //     { row: 2, col: 2, innerRow: 1, innerCol: 0, figure: '0' },
-        //     { row: 2, col: 2, innerRow: 1, innerCol: 1, figure: '0' },
-        //     { row: 2, col: 2, innerRow: 1, innerCol: 2, figure: '0' },
-        //     { row: 2, col: 2, innerRow: 2, innerCol: 0, figure: '0' },
-        //     { row: 2, col: 2, innerRow: 2, innerCol: 1, figure: '0' },
-        //     { row: 2, col: 2, innerRow: 2, innerCol: 2, figure: '0' },
-        // ]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         // Создание нового изображения
         const canvasWidth = 600; // Ширина холста
@@ -202,34 +87,35 @@ class CanvasService {
                                 }
                             }
                         }
-                        // // Рисование крестика
-                        // if (row === 1 && col === 1 && innerRow === 1 && innerCol === 1) {
-                        //     canvasContext.strokeStyle = crossColor;
-                        //     canvasContext.lineWidth = 2;
-                        //
-                        //     canvasContext.beginPath();
-                        //     canvasContext.moveTo(innerX + 10, innerY + 10);
-                        //     canvasContext.lineTo(innerX + innerSquareSize - 10, innerY + innerSquareSize - 10);
-                        //     canvasContext.moveTo(innerX + 10, innerY + innerSquareSize - 10);
-                        //     canvasContext.lineTo(innerX + innerSquareSize - 10, innerY + 10);
-                        //     canvasContext.moveTo(innerX + 10, innerY + 10);
-                        //     canvasContext.lineTo(innerX + innerSquareSize - 10, innerY + innerSquareSize - 10);
-                        //     canvasContext.stroke();
-                        // }
-                        //
-                        // // Рисование нолика
-                        // if (row === 1 && col === 1 && innerRow === 0 && innerCol === 0) {
-                        //     canvasContext.strokeStyle = crossColor;
-                        //
-                        //     const centerX = innerX + innerSquareSize / 2;
-                        //     const centerY = innerY + innerSquareSize / 2;
-                        //     const radius = innerSquareSize / 2 - 10;
-                        //
-                        //     canvasContext.fillStyle = circleColor;
-                        //     canvasContext.beginPath();
-                        //     canvasContext.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                        //     canvasContext.stroke();
-                        // }
+
+                        if (active && row === active.row && col === active.col) {
+                            // Рисование обводки вокруг активного квадрата
+                            const borderSize = 5; // Размер обводки
+                            const startX = x - borderSize;
+                            const startY = y - borderSize;
+                            const sizeWithBorder = squareSize + 2 * borderSize;
+
+                            canvasContext.strokeStyle = 'red'; // Красный цвет
+                            canvasContext.lineWidth = borderSize;
+                            canvasContext.strokeRect(startX, startY, sizeWithBorder, sizeWithBorder);
+                        }
+
+                        if (
+                            activeInner &&
+                            row === activeInner.row &&
+                            col === activeInner.col &&
+                            innerRow === activeInner.innerRow &&
+                            innerCol === activeInner.innerCol
+                        ) {
+                            const borderSize = 5; // Размер обводки
+                            const startX = innerX - borderSize;
+                            const startY = innerY - borderSize;
+                            const sizeWithBorder = innerSquareSize + 2 * borderSize;
+
+                            canvasContext.strokeStyle = 'brown'; // Коричневый цвет
+                            canvasContext.lineWidth = borderSize;
+                            canvasContext.strokeRect(startX, startY, sizeWithBorder, sizeWithBorder);
+                        }
                     }
                 }
             }

@@ -28,7 +28,7 @@ module.exports = {
                         callback_data: "zero",
                     }
                 ],
-            ]
+            ],
         }
     },
 
@@ -123,5 +123,12 @@ module.exports = {
                 },
             ],
         ]
+    },
+    startGameKeyboard: {
+        keyboard: [
+            [{ text: 'Почати гру' },{ text: 'Змінити тип гри' }],
+        ],
+        resize_keyboard: true,
+        remove_keyboard: true
     }
 }
