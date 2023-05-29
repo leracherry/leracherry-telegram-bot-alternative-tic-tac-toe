@@ -188,6 +188,7 @@ class GameService {
         if(isGameWinner) {
             game.moves = moves
             game.status = 'ended'
+            game.winner = id
             await game.save()
             return {message: 'Гра закінчилась, Ви виграли', moves}
         }
@@ -196,6 +197,7 @@ class GameService {
         if(moves.length === 81){
             game.moves = moves
             game.status = 'ended'
+            game.winner = 'draw'
             await game.save()
             return {message: 'Гра закінчилась, Нічия', moves}
         }
@@ -251,6 +253,7 @@ class GameService {
             if(isGameEnded){
                 game.moves = moves
                 game.status = 'ended'
+                game.winner = 'draw'
                 await game.save()
                 return {message: 'Гра закінчилась, Нічия', moves}
             }
@@ -268,6 +271,7 @@ class GameService {
         if(isBotWinner) {
             game.moves = moves
             game.status = 'ended'
+            game.winner = 'bot'
             await game.save()
             return {message: 'Гра закінчилась, Ви програли', moves}
         }

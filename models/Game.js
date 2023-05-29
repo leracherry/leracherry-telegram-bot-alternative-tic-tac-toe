@@ -22,6 +22,10 @@ const schema = new Schema({
         type: String,
         required: true
     },
+    winner: {
+      type: String,
+      required: false
+    },
     createdAt: {
         type: Date,
         required: true
