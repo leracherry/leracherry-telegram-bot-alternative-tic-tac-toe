@@ -13,6 +13,8 @@ const UserService = require('./services/user');
 const GameService = require('./services/game');
 const CanvasService = require('./services/canvas');
 const constants = require('./common/constants');
+const Game = require('./models/Game');
+const User = require('./models/User');
 
 bot.start(async (ctx) => {
   try {
@@ -37,7 +39,113 @@ bot.hears('Почати гру', async (ctx) => {
     });
     return ctx.reply(`Варіанти:`, constants.startPlayWithBotMarkup);
   }
-  return ctx.reply('Почати гру (скоро)');
+
+  if (!isBot) {
+    const { status, game } = await UserService.getStatusPending(id);
+    if (status === 'pending') {
+      const replyMessage = await ctx.reply('Очікуйте початку гри', {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Зупинити пошук', callback_data: 'stopSearch' }],
+          ],
+        },
+      });
+      game.firstPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    } else {
+      await ctx.telegram.deleteMessage(
+        game.firstPlayer,
+        game.firstPlayerMessageId,
+      );
+
+      const canvas = CanvasService.createDefaultCanvas();
+
+      const imageBuffer = canvas.toBuffer();
+
+      await ctx.deleteMessage();
+
+      const secondPlayer = await User.findOne({ id: game.secondPlayer });
+      const firstPlayer = await User.findOne({ id: game.firstPlayer });
+
+      const firstPlayerReplyMessage = await ctx.telegram.sendPhoto(
+        game.firstPlayer,
+        { source: imageBuffer },
+        {
+          caption: `Гра знайшлась, Ви граєте: X, суперник: ${secondPlayer.name}, виберіть звідки почати`,
+          reply_markup: constants.startGameHumanX,
+        },
+      );
+      const secondPlayerReplyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Ви граєте: 0, суперник: ${firstPlayer.name}`,
+        },
+      );
+      game.firstPlayerMessageId = firstPlayerReplyMessage.message_id;
+      game.secondPlayerMessageId = secondPlayerReplyMessage.message_id;
+
+      await game.save();
+
+      return secondPlayerReplyMessage;
+    }
+  }
+});
+
+bot.action('startGameHumanXbtn1', async (ctx) => {
+  return UserService.startGameHumanXbtn1(ctx, 0, 0);
+});
+bot.action('startGameHumanXbtn2', async (ctx) => {
+  return UserService.startGameHumanXbtn1(ctx, 0, 1);
+});
+bot.action('startGameHumanXbtn3', async (ctx) => {
+  return UserService.startGameHumanXbtn1(ctx, 0, 2);
+});
+bot.action('startGameHumanXbtn4', async (ctx) => {
+  return UserService.startGameHumanXbtn1(ctx, 1, 0);
+});
+bot.action('startGameHumanXbtn5', async (ctx) => {
+  return UserService.startGameHumanXbtn1(ctx, 1, 1);
+});
+bot.action('startGameHumanXbtn6', async (ctx) => {
+  return UserService.startGameHumanXbtn1(ctx, 1, 2);
+});
+bot.action('startGameHumanXbtn7', async (ctx) => {
+  return UserService.startGameHumanXbtn1(ctx, 2, 0);
+});
+bot.action('startGameHumanXbtn8', async (ctx) => {
+  return UserService.startGameHumanXbtn1(ctx, 2, 1);
+});
+bot.action('startGameHumanXbtn9', async (ctx) => {
+  return UserService.startGameHumanXbtn1(ctx, 2, 2);
+});
+
+bot.action('gameBoardHuman1', async (ctx) => {
+  return await UserService.gameBoardHuman(ctx, 0, 0);
+});
+bot.action('gameBoardHuman2', async (ctx) => {
+  return await UserService.gameBoardHuman(ctx, 0, 1);
+});
+bot.action('gameBoardHuman3', async (ctx) => {
+  return await UserService.gameBoardHuman(ctx, 0, 2);
+});
+bot.action('gameBoardHuman4', async (ctx) => {
+  return await UserService.gameBoardHuman(ctx, 1, 0);
+});
+bot.action('gameBoardHuman5', async (ctx) => {
+  return await UserService.gameBoardHuman(ctx, 1, 1);
+});
+bot.action('gameBoardHuman6', async (ctx) => {
+  return await UserService.gameBoardHuman(ctx, 1, 2);
+});
+bot.action('gameBoardHuman7', async (ctx) => {
+  return await UserService.gameBoardHuman(ctx, 2, 0);
+});
+bot.action('gameBoardHuman8', async (ctx) => {
+  return await UserService.gameBoardHuman(ctx, 2, 1);
+});
+bot.action('gameBoardHuman9', async (ctx) => {
+  return await UserService.gameBoardHuman(ctx, 2, 2);
 });
 
 bot.hears('Змінити тип гри', (ctx) => {
@@ -47,6 +155,21 @@ bot.hears('Змінити тип гри', (ctx) => {
   );
 });
 
+bot.action('stopSearch', async (ctx) => {
+  await ctx.deleteMessage();
+
+  const user = await User.findOne({ status: 'pending' });
+  const game = await Game.findOne({
+    status: 'pending',
+    firstPlayer: user.id,
+  });
+
+  await Game.deleteOne(game._id);
+  user.status = 'active';
+  await user.save();
+  return await ctx.reply('Ви призупинили пошук');
+});
+
 bot.action('human', async (ctx) => {
   const id = ctx.update.callback_query.from.id;
 
@@ -54,7 +177,7 @@ bot.action('human', async (ctx) => {
 
   await ctx.deleteMessage();
 
-  return ctx.reply('Ви вибрали грати с компьютером', {
+  return ctx.reply('Ви вибрали грати з вами подібними, до бою!', {
     reply_markup: constants.startGameKeyboard,
   });
 });
