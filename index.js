@@ -18,9 +18,9 @@ const User = require('./models/User');
 
 bot.start(async (ctx) => {
   try {
-    const id = ctx.message.from.id;
-    const status = await UserService.checkNewUser(id);
-    if (status !== 'active') {
+    const id = ctx.chat.id.toString();
+    const status = await UserService.checkNewUser(id, ctx);
+    if (status === 'blocked') {
       return ctx.reply(`Вас було заблоковано`);
     }
     return ctx.reply(
@@ -28,6 +28,342 @@ bot.start(async (ctx) => {
       constants.startBotReplyMarkup,
     );
   } catch (error) {}
+});
+
+bot.command('statistics', async (ctx) => {
+  const id = ctx.chat.id.toString();
+  const game = await Game.find({
+    status: 'ended',
+    $or: [{ firstPlayer: id }, { secondPlayer: id }],
+  });
+
+  const gameBotList = game.filter((game) => game.gameType === 'bot');
+  const gameHumanList = game.filter((game) => game.gameType === 'human');
+
+  const gameBotWinner = gameBotList.filter((game) => game.winner !== 'bot');
+  const gameBotLoser = gameBotList.filter((game) => game.winner === 'bot');
+  const gameBotDraw = gameBotList.filter((game) => game.winner === 'draw');
+
+  const gameHumanWinner = gameHumanList.filter((game) => game.winner === id);
+  const gameHumanLoser = gameHumanList.filter((game) => game.winner !== id);
+  const gameHumanDraw = gameHumanList.filter((game) => game.winner === 'draw');
+
+  const gameWinner = game.filter((game) => game.winner === id);
+  const gameLoser = game.filter((game) => game.winner !== id);
+  const gameDraw = game.filter((game) => game.winner === 'draw');
+  return await ctx.reply(
+    `Статистика гри з ботом:\n\nПеремоги: ${gameBotWinner.length}${
+      isNaN((gameBotWinner.length * 100) / gameBotList.length)
+        ? ''
+        : `(${(gameBotWinner.length * 100) / gameBotList.length}%)`
+    }\nНічиї: ${gameBotDraw.length}${
+      isNaN((gameBotDraw.length * 100) / gameBotList.length)
+        ? ''
+        : `(${(gameBotDraw.length * 100) / gameBotList.length}%)`
+    }\nПоразки: ${gameBotLoser.length}${
+      isNaN((gameBotLoser.length * 100) / gameBotList.length)
+        ? ''
+        : `(${(gameBotLoser.length * 100) / gameBotList.length}%)`
+    }\nУсього ігор з ботом: ${
+      gameBotList.length
+    }\n\nСтатистика гри з людьми:\n\nПеремоги: ${gameHumanWinner.length}${
+      isNaN((gameHumanWinner.length * 100) / gameHumanList.length)
+        ? ''
+        : `(${(gameHumanWinner.length * 100) / gameHumanList.length}%)`
+    }\nНічиї: ${gameHumanDraw.length}${
+      isNaN((gameHumanDraw.length * 100) / gameHumanList.length)
+        ? ''
+        : `(${(gameHumanDraw.length * 100) / gameHumanList.length}%)`
+    }\nПоразки: ${gameHumanLoser.length}${
+      isNaN((gameHumanLoser.length * 100) / gameHumanList.length)
+        ? ''
+        : `(${(gameHumanLoser.length * 100) / gameHumanList.length}%)`
+    }\nУсього ігор з людьми: ${
+      gameHumanList.length
+    }\n\nПідсумкова статистика:\n\nПеремоги: ${gameWinner.length}${
+      isNaN((gameWinner.length * 100) / game.length)
+        ? ''
+        : `(${(gameWinner.length * 100) / game.length}%)`
+    }\nНічиї: ${gameDraw.length}${
+      isNaN((gameDraw.length * 100) / game.length)
+        ? ''
+        : `(${(gameDraw.length * 100) / game.length}%)`
+    }\nПоразки: ${gameLoser.length}${
+      isNaN((gameLoser.length * 100) / game.length)
+        ? ''
+        : `(${(gameLoser.length * 100) / game.length}%)`
+    }\nУсього ігор з ботом: ${game.length}`,
+  );
+});
+
+bot.command('getactivegame', async (ctx) => {
+  const id = ctx.chat.id.toString();
+  const status = await UserService.checkNewUser(id, ctx);
+  if (status === 'blocked') {
+    return ctx.reply(`Вас було заблоковано`);
+  }
+
+  const game = await Game.findOne({
+    $or: [{ firstPlayer: id }, { secondPlayer: id }],
+    status: 'started',
+    gameType: 'human',
+  });
+
+  if (!game) {
+    return await ctx.reply('У вас немає активних ігор');
+  }
+
+  const firstPlayer = await User.findOne({ id: game.firstPlayer });
+  const secondPlayer = await User.findOne({ id: game.secondPlayer });
+
+  const currentPlayer = firstPlayer.id === id ? firstPlayer : secondPlayer;
+
+  const figure = firstPlayer.id === id ? 'X' : '0';
+
+  const moves = game.moves;
+
+  if (figure === 'X' && currentPlayer.id === firstPlayer.id) {
+    if (moves.length === 0) {
+      const canvas = CanvasService.createDefaultCanvas();
+
+      const imageBuffer = canvas.toBuffer();
+
+      const replyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Гра знайшлась, Ви граєте: X, суперник: ${secondPlayer.name}, виберіть звідки почати`,
+          reply_markup: constants.startGameHumanX,
+        },
+      );
+
+      game.firstPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    } else if (moves.length === 1) {
+      const canvas = CanvasService.createDefaultCanvas([], {
+        row: moves[0].row,
+        col: moves[0].col,
+      });
+
+      const imageBuffer = canvas.toBuffer();
+
+      const replyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Гра знайшлась, Ви граєте: X, суперник: ${secondPlayer.name}, ваш хід`,
+          reply_markup: constants.gameBoardHuman,
+        },
+      );
+      game.firstPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    } else if (
+      moves.length > 1 &&
+      moves[moves.length - 1].figure === 'X' &&
+      !moves[moves.length - 1].innerRow &&
+      !moves[moves.length - 1].innerCol
+    ) {
+      const canvas = CanvasService.createDefaultCanvas(
+        moves,
+        {
+          row: moves[moves.length - 1].row,
+          col: moves[moves.length - 1].col,
+        },
+        moves[moves.length - 2],
+      );
+
+      const imageBuffer = canvas.toBuffer();
+
+      const reply_markup = await GameService.getFilledReplyMarkupHuman(
+        id,
+        moves[moves.length - 1].row,
+        moves[moves.length - 1].col,
+      );
+
+      const replyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Ви граєте: X, суперник: ${secondPlayer.name}, ваш хід`,
+          reply_markup,
+        },
+      );
+
+      game.firstPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    } else if (
+      moves.length > 1 &&
+      moves[moves.length - 1].figure === '0' &&
+      moves[moves.length - 1].innerRow &&
+      moves[moves.length - 1].innerCol
+    ) {
+      const canvas = CanvasService.createDefaultCanvas(
+        moves,
+        {
+          row: moves[moves.length - 1].row,
+          col: moves[moves.length - 1].col,
+        },
+        moves[moves.length - 1],
+      );
+
+      const imageBuffer = canvas.toBuffer();
+
+      const reply_markup = UserService.getEmptyPointsHuman(moves);
+
+      const replyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Ви граєте: X, суперник: ${secondPlayer.name}, ваш хід, виберіть інше поле:`,
+          reply_markup,
+        },
+      );
+
+      game.firstPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    } else if (
+      moves.length > 1 &&
+      moves[moves.length - 1].figure === '0' &&
+      !moves[moves.length - 1].innerRow &&
+      !moves[moves.length - 1].innerCol
+    ) {
+      const canvas = CanvasService.createDefaultCanvas(
+        moves,
+        {
+          row: moves[moves.length - 1].row,
+          col: moves[moves.length - 1].col,
+        },
+        moves[moves.length - 2],
+      );
+
+      const imageBuffer = canvas.toBuffer();
+
+      const replyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Ви граєте: X, суперник: ${secondPlayer.name}, хід суперника`,
+        },
+      );
+
+      game.firstPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    }
+  } else if (figure === '0' && currentPlayer.id === secondPlayer.id) {
+    if (moves.length === 0) {
+      return await ctx.reply(
+        `Гра знайшлася, ви граєте 0, суперник: ${firstPlayer.name}, зачекайте поки суперник зробить свій хід 🕦`,
+      );
+    } else if (moves.length === 1) {
+      const canvas = CanvasService.createDefaultCanvas([], {
+        row: moves[0].row,
+        col: moves[0].col,
+      });
+
+      const imageBuffer = canvas.toBuffer();
+
+      const replyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Гра знайшлась, Ви граєте: 0, суперник: ${firstPlayer.name}, хід суперника`,
+        },
+      );
+      game.secondPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    } else if (
+      moves.length > 1 &&
+      moves[moves.length - 1].figure === '0' &&
+      !moves[moves.length - 1].innerRow &&
+      !moves[moves.length - 1].innerCol
+    ) {
+      const canvas = CanvasService.createDefaultCanvas(
+        moves,
+        {
+          row: moves[moves.length - 1].row,
+          col: moves[moves.length - 1].col,
+        },
+        moves[moves.length - 2],
+      );
+
+      const imageBuffer = canvas.toBuffer();
+
+      const reply_markup = await GameService.getFilledReplyMarkupHuman(
+        id,
+        moves[moves.length - 1].row,
+        moves[moves.length - 1].col,
+      );
+
+      const replyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Ви граєте: 0, суперник: ${firstPlayer.name}, ваш хід`,
+          reply_markup,
+        },
+      );
+
+      game.secondPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    } else if (
+      moves.length > 1 &&
+      moves[moves.length - 1].figure === 'X' &&
+      moves[moves.length - 1].innerRow &&
+      moves[moves.length - 1].innerCol
+    ) {
+      const canvas = CanvasService.createDefaultCanvas(
+        moves,
+        {
+          row: moves[moves.length - 1].row,
+          col: moves[moves.length - 1].col,
+        },
+        moves[moves.length - 1],
+      );
+
+      const imageBuffer = canvas.toBuffer();
+
+      const reply_markup = UserService.getEmptyPointsHuman(moves);
+
+      const replyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Ви граєте: 0, суперник: ${firstPlayer.name}, ваш хід, виберіть інше поле:`,
+          reply_markup,
+        },
+      );
+
+      game.secondPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    } else if (
+      moves.length > 1 &&
+      moves[moves.length - 1].figure === 'X' &&
+      !moves[moves.length - 1].innerRow &&
+      !moves[moves.length - 1].innerCol
+    ) {
+      const canvas = CanvasService.createDefaultCanvas(
+        moves,
+        {
+          row: moves[moves.length - 1].row,
+          col: moves[moves.length - 1].col,
+        },
+        moves[moves.length - 2],
+      );
+
+      const imageBuffer = canvas.toBuffer();
+
+      const replyMessage = await ctx.replyWithPhoto(
+        { source: imageBuffer },
+        {
+          caption: `Ви граєте: 0, суперник: ${firstPlayer.name}, хід суперника`,
+        },
+      );
+
+      game.secondPlayerMessageId = replyMessage.message_id;
+      await game.save();
+      return replyMessage;
+    }
+  }
 });
 
 bot.hears('Почати гру', async (ctx) => {
@@ -43,6 +379,7 @@ bot.hears('Почати гру', async (ctx) => {
   if (!isBot) {
     const { status, game } = await UserService.getStatusPending(id);
     if (status === 'pending') {
+      await ctx.reply('💬', { reply_markup: { remove_keyboard: true } });
       const replyMessage = await ctx.reply('Очікуйте початку гри', {
         reply_markup: {
           inline_keyboard: [
@@ -76,12 +413,15 @@ bot.hears('Почати гру', async (ctx) => {
           reply_markup: constants.startGameHumanX,
         },
       );
-      const secondPlayerReplyMessage = await ctx.replyWithPhoto(
-        { source: imageBuffer },
+
+      const secondPlayerReplyMessage = await ctx.telegram.sendMessage(
+        game.secondPlayer,
+        `Гра знайшлася, ви граєте 0, суперник: ${firstPlayer.name}, зачекайте поки суперник зробить свій хід 🕦`,
         {
-          caption: `Ви граєте: 0, суперник: ${firstPlayer.name}`,
+          reply_markup: { remove_keyboard: true },
         },
       );
+
       game.firstPlayerMessageId = firstPlayerReplyMessage.message_id;
       game.secondPlayerMessageId = secondPlayerReplyMessage.message_id;
 
@@ -148,6 +488,34 @@ bot.action('gameBoardHuman9', async (ctx) => {
   return await UserService.gameBoardHuman(ctx, 2, 2);
 });
 
+bot.action('chooseAgainHuman1', async (ctx) => {
+  return UserService.chooseAgainHuman(ctx, 0, 0);
+});
+bot.action('chooseAgainHuman2', async (ctx) => {
+  return UserService.chooseAgainHuman(ctx, 0, 1);
+});
+bot.action('chooseAgainHuman3', async (ctx) => {
+  return UserService.chooseAgainHuman(ctx, 0, 2);
+});
+bot.action('chooseAgainHuman4', async (ctx) => {
+  return UserService.chooseAgainHuman(ctx, 1, 0);
+});
+bot.action('chooseAgainHuman5', async (ctx) => {
+  return UserService.chooseAgainHuman(ctx, 1, 1);
+});
+bot.action('chooseAgainHuman6', async (ctx) => {
+  return UserService.chooseAgainHuman(ctx, 1, 2);
+});
+bot.action('chooseAgainHuman7', async (ctx) => {
+  return UserService.chooseAgainHuman(ctx, 2, 0);
+});
+bot.action('chooseAgainHuman8', async (ctx) => {
+  return UserService.chooseAgainHuman(ctx, 2, 1);
+});
+bot.action('chooseAgainHuman9', async (ctx) => {
+  return UserService.chooseAgainHuman(ctx, 2, 2);
+});
+
 bot.hears('Змінити тип гри', (ctx) => {
   return ctx.reply(
     `Виберіть з ким ви будете грати:`,
@@ -167,7 +535,9 @@ bot.action('stopSearch', async (ctx) => {
   await Game.deleteOne(game._id);
   user.status = 'active';
   await user.save();
-  return await ctx.reply('Ви призупинили пошук');
+  return await ctx.reply('Ви призупинили пошук', {
+    reply_markup: constants.startGameKeyboard,
+  });
 });
 
 bot.action('human', async (ctx) => {
