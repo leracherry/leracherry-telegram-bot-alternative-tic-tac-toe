@@ -176,6 +176,13 @@ class UserService {
       game.status = 'ended';
       game.winner = currentPlayer.id;
       await game.save();
+
+      firstPlayer.status = 'active';
+      secondPlayer.status = 'active';
+
+      await firstPlayer.save();
+      await secondPlayer.save();
+
       const lastMove = game.moves[game.moves - 1];
 
       const canvas = CanvasService.createDefaultCanvas(
@@ -228,6 +235,12 @@ class UserService {
       game.status = 'ended';
       game.winner = 'draw';
       await game.save();
+
+      firstPlayer.status = 'active';
+      secondPlayer.status = 'active';
+
+      await firstPlayer.save();
+      await secondPlayer.save();
 
       const lastMove = game.moves[game.moves - 1];
 

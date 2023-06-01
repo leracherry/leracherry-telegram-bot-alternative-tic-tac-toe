@@ -20,7 +20,7 @@ bot.start(async (ctx) => {
   try {
     const id = ctx.chat.id.toString();
     const status = await UserService.checkNewUser(id, ctx);
-    if (status === 'blocked') {
+    if (status === 'block') {
       return ctx.reply(`Вас було заблоковано`);
     }
     return ctx.reply(
