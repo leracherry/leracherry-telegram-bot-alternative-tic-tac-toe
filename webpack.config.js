@@ -6,11 +6,9 @@ module.exports = {
     server: './index.js',
   },
   output: {
-    path: path.join(__dirname, 'dist'),
-    publicPath: '/',
-    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js',
   },
-  // Config for your testing server
   devServer: {
     compress: true,
     allowedHosts: 'all', // If you are using WebpackDevServer as your production server, please fix this line!
