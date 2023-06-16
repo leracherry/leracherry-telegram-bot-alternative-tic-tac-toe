@@ -190,36 +190,67 @@ class GameService {
       { row: 2, col: 1 },
       { row: 2, col: 2 },
     ];
-    const squareMoves = [];
-    const winsList = [];
+
+    const groupedMoves = [];
 
     for (let i = 0; i < innerItems.length; i++) {
-      const sMoves = moves
-        .filter(
-          (item) =>
-            item.row === innerItems[i].row && item.col === innerItems[i].col,
-        )
-        .map((el) => {
-          if (el.innerRow !== undefined && el.innerCol !== undefined) {
-            return {
-              row: el.innerRow,
-              col: el.innerCol,
-              figure: el.figure,
-            };
-          }
-          return undefined;
-        })
-        .filter((m) => m !== undefined);
-      squareMoves.push(sMoves);
+      const filteredMoves = moves.filter(
+        (item) =>
+          item.row === innerItems[i].row && item.col === innerItems[i].col,
+      );
+      groupedMoves.push(
+        filteredMoves.map((mv) => ({
+          row: mv.innerRow,
+          col: mv.innerCol,
+          figure: mv.figure,
+        })),
+      );
     }
 
-    for (let i = 0; i < squareMoves.length; i++) {
-      winsList.push(this.isWinner(squareMoves[i], figure) ? 1 : 0);
+    const checkedForWinList = [];
+
+    for (let i = 0; i < innerItems.length; i++) {
+      if (this.isWinner(groupedMoves[i], figure)) {
+        checkedForWinList.push({
+          row: innerItems[i].row,
+          col: innerItems[i].col,
+          figure,
+        });
+      }
     }
 
-    const sum = winsList.reduce((acc, curr) => acc + curr, 0);
+    return this.isWinner(checkedForWinList, figure);
 
-    return sum === 3;
+    // const squareMoves = [];
+    // const winsList = [];
+    //
+    // for (let i = 0; i < innerItems.length; i++) {
+    //   const sMoves = moves
+    //     .filter(
+    //       (item) =>
+    //         item.row === innerItems[i].row && item.col === innerItems[i].col,
+    //     )
+    //     .map((el) => {
+    //       if (el.innerRow !== undefined && el.innerCol !== undefined) {
+    //         return {
+    //           row: el.innerRow,
+    //           col: el.innerCol,
+    //           figure: el.figure,
+    //         };
+    //       }
+    //       return undefined;
+    //     })
+    //     .filter((m) => m !== undefined);
+    //   squareMoves.push(sMoves);
+    // }
+    //
+    // for (let i = 0; i < squareMoves.length; i++) {
+    //   winsList.push(this.isWinner(squareMoves[i], figure) ? 1 : 0);
+    // }
+    //
+    // const sum = winsList.reduce((acc, curr) => acc + curr, 0);
+    //
+    // return sum === 3;
   }
 
   async getMoves(id, innerRow, innerCol) {
